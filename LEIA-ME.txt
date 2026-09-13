@@ -1,0 +1,37 @@
+BOT DE SUPORTE TOTALMENTE SEPARADO
+
+Este bot deve ser criado como OUTRO aplicativo no Discord Developer Portal.
+
+Você terá:
+1. Bot Verificação
+2. Bot Suporte
+
+Eles usam tokens e CLIENT_ID diferentes.
+
+PASSOS:
+1. Crie um NOVO aplicativo no Developer Portal, por exemplo: Marco Support.
+2. Vá em Bot e gere o token desse NOVO bot.
+3. Em Informações gerais, copie o CLIENT_ID desse NOVO aplicativo.
+4. Instale esse novo bot no servidor com scopes:
+   bot
+   applications.commands
+5. Dê ao bot permissões:
+   - Ver canais
+   - Enviar mensagens
+   - Ler histórico
+   - Gerenciar canais
+   - Anexar arquivos
+6. Crie o cargo 🛠️ Suporte.
+7. Copie o ID do cargo para SUPPORT_ROLE_ID.
+8. Opcional: crie categoria 🎟️ TICKETS e coloque o ID em TICKET_CATEGORY_ID.
+9. Renomeie .env.example para .env.
+10. Preencha o .env.
+11. Rode:
+    npm install
+    npm start
+12. No Discord, use:
+    /painelsuporte
+
+O bot cria ticket-1, ticket-2, ticket-3...
+O cargo de suporte é marcado automaticamente.
+Só o cliente, o suporte e o bot veem o ticket.

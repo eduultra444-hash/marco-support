@@ -1,0 +1,13 @@
+{
+  "name": "bot-suporte-separado",
+  "version": "1.0.0",
+  "description": "Bot Discord separado para tickets de suporte",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.7"
+  }
+}
