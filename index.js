@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const fs = require("fs");
 const path = require("path");
+const http = require("http");
 
 const {
   Client,
@@ -17,6 +18,10 @@ const {
   ActionRowBuilder
 } = require("discord.js");
 
+// =========================
+// CONFIGURAÇÃO
+// =========================
+
 const required = [
   "BOT_TOKEN",
   "CLIENT_ID",
@@ -26,31 +31,41 @@ const required = [
 
 for (const key of required) {
   if (!process.env[key]) {
-    console.error(`Falta ${key} no arquivo .env`);
+    console.error(`❌ Falta ${key} nas variáveis de ambiente.`);
     process.exit(1);
   }
 }
 
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.Guilds
   ]
 });
 
-const counterFile = path.join(__dirname, "ticket-counter.json");
+const counterFile = path.join(
+  __dirname,
+  "ticket-counter.json"
+);
 
 function nextTicketNumber() {
-  let data = { lastTicket: 0 };
+  let data = {
+    lastTicket: 0
+  };
 
   try {
     if (fs.existsSync(counterFile)) {
       data = JSON.parse(
-        fs.readFileSync(counterFile, "utf8")
+        fs.readFileSync(
+          counterFile,
+          "utf8"
+        )
       );
     }
   } catch (error) {
-    console.error("Erro ao ler contador:", error);
+    console.error(
+      "Erro ao ler contador:",
+      error
+    );
   }
 
   data.lastTicket =
@@ -58,12 +73,52 @@ function nextTicketNumber() {
 
   fs.writeFileSync(
     counterFile,
-    JSON.stringify(data, null, 2),
+    JSON.stringify(
+      data,
+      null,
+      2
+    ),
     "utf8"
   );
 
   return data.lastTicket;
 }
+
+// =========================
+// SERVIDOR HTTP PARA RENDER
+// =========================
+
+const PORT = Number(
+  process.env.PORT || 3000
+);
+
+http
+  .createServer((req, res) => {
+    res.writeHead(
+      200,
+      {
+        "Content-Type":
+          "text/plain; charset=utf-8"
+      }
+    );
+
+    res.end(
+      "Marco Support esta online."
+    );
+  })
+  .listen(
+    PORT,
+    "0.0.0.0",
+    () => {
+      console.log(
+        `🌐 Porta ${PORT} aberta para o Render.`
+      );
+    }
+  );
+
+// =========================
+// COMANDOS
+// =========================
 
 const commands = [
   new SlashCommandBuilder()
@@ -77,42 +132,63 @@ const commands = [
     .toJSON()
 ];
 
-client.once("ready", async () => {
-  console.log(
-    `Bot de suporte conectado como ${client.user.tag}`
-  );
+// =========================
+// BOT ONLINE
+// =========================
 
-  const rest = new REST({
-    version: "10"
-  }).setToken(process.env.BOT_TOKEN);
-
-  try {
-    await rest.put(
-      Routes.applicationGuildCommands(
-        process.env.CLIENT_ID,
-        process.env.GUILD_ID
-      ),
-      {
-        body: commands
-      }
-    );
-
+client.once(
+  "ready",
+  async () => {
     console.log(
-      "Comando /painelsuporte registrado."
+      `✅ Bot conectado como ${client.user.tag}`
     );
-  } catch (error) {
-    console.error(
-      "Erro ao registrar comando:",
-      error
-    );
+
+    const rest =
+      new REST({
+        version: "10"
+      }).setToken(
+        process.env.BOT_TOKEN
+      );
+
+    try {
+      await rest.put(
+        Routes.applicationGuildCommands(
+          process.env.CLIENT_ID,
+          process.env.GUILD_ID
+        ),
+        {
+          body: commands
+        }
+      );
+
+      console.log(
+        "✅ Comando /painelsuporte registrado."
+      );
+
+      console.log(
+        `🛠️ Cargo suporte: ${process.env.SUPPORT_ROLE_ID}`
+      );
+    } catch (error) {
+      console.error(
+        "❌ Erro ao registrar comando:",
+        error
+      );
+    }
   }
-});
+);
+
+// =========================
+// INTERAÇÕES
+// =========================
 
 client.on(
   "interactionCreate",
   async interaction => {
     try {
-      // PAINEL DE SUPORTE
+
+      // =====================
+      // PAINEL
+      // =====================
 
       if (
         interaction.isChatInputCommand() &&
@@ -122,57 +198,74 @@ client.on(
         const embed =
           new EmbedBuilder()
             .setColor(0x2b7fff)
+
             .setTitle(
               `🎟️ ${
                 process.env.PANEL_TITLE ||
                 "Central de Suporte"
               }`
             )
+
             .setDescription(
               process.env.PANEL_MESSAGE ||
-                "Clique no botão abaixo para abrir um ticket."
+                "Precisa de ajuda? Clique no botão abaixo para abrir um ticket privado."
             )
+
             .addFields(
               {
                 name:
                   "🔒 Atendimento privado",
+
                 value:
-                  "Somente você e a equipe de suporte poderão visualizar seu ticket."
+                  "Somente você e a equipe de suporte poderão visualizar o ticket."
               },
+
               {
-                name: "⚡ Como funciona?",
+                name:
+                  "⚡ Como funciona?",
+
                 value:
-                  "Clique em **Abrir Ticket**, explique seu problema e aguarde a equipe."
+                  "Clique em **Abrir Ticket**, explique o problema e aguarde a equipe."
               }
             )
+
             .setFooter({
               text:
                 process.env.PANEL_FOOTER ||
-                "Sistema de suporte"
+                "Marco Store • Suporte"
             });
 
         const row =
-          new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-              .setCustomId(
-                "abrir_ticket"
-              )
-              .setLabel("Abrir Ticket")
-              .setEmoji("🎟️")
-              .setStyle(
-                ButtonStyle.Primary
-              )
-          );
+          new ActionRowBuilder()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(
+                  "abrir_ticket"
+                )
+
+                .setLabel(
+                  "Abrir Ticket"
+                )
+
+                .setEmoji("🎟️")
+
+                .setStyle(
+                  ButtonStyle.Primary
+                )
+            );
 
         await interaction.reply({
           embeds: [embed],
+
           components: [row]
         });
 
         return;
       }
 
+      // =====================
       // ABRIR TICKET
+      // =====================
 
       if (
         interaction.isButton() &&
@@ -195,6 +288,7 @@ client.on(
           await interaction.reply({
             content:
               `⚠️ Você já possui um ticket aberto: ${existing}`,
+
             ephemeral: true
           });
 
@@ -205,7 +299,7 @@ client.on(
           ephemeral: true
         });
 
-        const ticketNumber =
+        const number =
           nextTicketNumber();
 
         const permissionOverwrites =
@@ -213,6 +307,7 @@ client.on(
             {
               id:
                 guild.roles.everyone.id,
+
               deny: [
                 PermissionFlagsBits.ViewChannel
               ]
@@ -221,6 +316,7 @@ client.on(
             {
               id:
                 interaction.user.id,
+
               allow: [
                 PermissionFlagsBits.ViewChannel,
                 PermissionFlagsBits.SendMessages,
@@ -233,17 +329,19 @@ client.on(
               id:
                 process.env
                   .SUPPORT_ROLE_ID,
+
               allow: [
                 PermissionFlagsBits.ViewChannel,
                 PermissionFlagsBits.SendMessages,
                 PermissionFlagsBits.ReadMessageHistory,
-                PermissionFlagsBits.AttachFiles,
-                PermissionFlagsBits.ManageChannels
+                PermissionFlagsBits.AttachFiles
               ]
             },
 
             {
-              id: client.user.id,
+              id:
+                client.user.id,
+
               allow: [
                 PermissionFlagsBits.ViewChannel,
                 PermissionFlagsBits.SendMessages,
@@ -255,11 +353,14 @@ client.on(
 
         const options = {
           name:
-            `ticket-${ticketNumber}`,
+            `ticket-${number}`,
+
           type:
             ChannelType.GuildText,
+
           topic:
             `ticket-owner:${interaction.user.id}`,
+
           permissionOverwrites
         };
 
@@ -272,66 +373,81 @@ client.on(
               .TICKET_CATEGORY_ID;
         }
 
-        const ticketChannel =
+        const channel =
           await guild.channels.create(
             options
           );
 
-        const ticketEmbed =
+        const embed =
           new EmbedBuilder()
             .setColor(0x57f287)
+
             .setTitle(
-              `🎟️ Ticket #${ticketNumber}`
+              `🎟️ Ticket #${number}`
             )
+
             .setDescription(
-              `${interaction.user}, seu atendimento foi aberto com sucesso.\n\n` +
+              `${interaction.user}, seu ticket foi criado.\n\n` +
                 `${
                   process.env
                     .TICKET_WELCOME ||
                   "Explique aqui como podemos ajudar."
                 }`
             )
+
             .addFields(
               {
-                name: "👤 Cliente",
+                name:
+                  "👤 Cliente",
+
                 value:
                   `${interaction.user}`,
+
                 inline: true
               },
+
               {
-                name: "🛠️ Suporte",
+                name:
+                  "🛠️ Suporte",
+
                 value:
                   `<@&${process.env.SUPPORT_ROLE_ID}>`,
+
                 inline: true
               }
             )
+
             .setFooter({
               text:
                 "Somente a equipe de suporte pode fechar este ticket."
             });
 
-        const closeRow =
-          new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-              .setCustomId(
-                "fechar_ticket"
-              )
-              .setLabel(
-                "Fechar Ticket"
-              )
-              .setEmoji("🔒")
-              .setStyle(
-                ButtonStyle.Danger
-              )
-          );
+        const row =
+          new ActionRowBuilder()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(
+                  "fechar_ticket"
+                )
 
-        await ticketChannel.send({
+                .setLabel(
+                  "Fechar Ticket"
+                )
+
+                .setEmoji("🔒")
+
+                .setStyle(
+                  ButtonStyle.Danger
+                )
+            );
+
+        await channel.send({
           content:
             `${interaction.user} <@&${process.env.SUPPORT_ROLE_ID}>`,
 
-          embeds: [ticketEmbed],
+          embeds: [embed],
 
-          components: [closeRow],
+          components: [row],
 
           allowedMentions: {
             users: [
@@ -347,14 +463,16 @@ client.on(
 
         await interaction.editReply({
           content:
-            `✅ Seu ticket foi criado: ${ticketChannel}`
+            `✅ Seu ticket foi criado: ${channel}`
         });
 
         return;
       }
 
+      // =====================
       // FECHAR TICKET
       // SOMENTE SUPORTE
+      // =====================
 
       if (
         interaction.isButton() &&
@@ -372,25 +490,46 @@ client.on(
           await interaction.reply({
             content:
               "❌ Esse botão só funciona dentro de um ticket.",
+
             ephemeral: true
           });
 
           return;
         }
 
-        const member =
-          interaction.member;
+        let memberRoleIds = [];
+
+        if (
+          Array.isArray(
+            interaction.member?.roles
+          )
+        ) {
+          memberRoleIds =
+            interaction.member.roles;
+        } else if (
+          interaction.member?.roles
+            ?.cache
+        ) {
+          memberRoleIds = [
+            ...interaction.member.roles.cache.keys()
+          ];
+        }
 
         const isSupport =
-          member.roles.cache.has(
+          memberRoleIds.includes(
             process.env
               .SUPPORT_ROLE_ID
           );
 
+        console.log(
+          `[FECHAR TICKET] ${interaction.user.tag} (${interaction.user.id}) suporte=${isSupport}`
+        );
+
         if (!isSupport) {
           await interaction.reply({
             content:
-              "❌ Apenas a equipe de suporte pode fechar este ticket.",
+              "❌ Somente quem possui o cargo de **Suporte** pode fechar este ticket.",
+
             ephemeral: true
           });
 
@@ -399,14 +538,14 @@ client.on(
 
         await interaction.reply({
           content:
-            "🔒 Ticket fechado pela equipe de suporte. O canal será apagado em 5 segundos."
+            "🔒 Ticket encerrado pela equipe de suporte. O canal será apagado em 5 segundos."
         });
 
         setTimeout(
           async () => {
             try {
               await channel.delete(
-                "Ticket encerrado pela equipe de suporte"
+                "Ticket encerrado pelo suporte"
               );
             } catch (error) {
               console.error(
@@ -417,10 +556,13 @@ client.on(
           },
           5000
         );
+
+        return;
       }
+
     } catch (error) {
       console.error(
-        "Erro na interação:",
+        "❌ Erro na interação:",
         error
       );
 
@@ -431,7 +573,8 @@ client.on(
         await interaction
           .reply({
             content:
-              "❌ Ocorreu um erro. Confira as permissões do bot.",
+              "❌ Ocorreu um erro. Confira as permissões e IDs configurados.",
+
             ephemeral: true
           })
           .catch(() => {});
