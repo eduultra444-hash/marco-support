@@ -8,7 +8,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const counterFile = path.join(__dirname, "ticket-counter.json");
 function nextTicketNumber() { try { const data = fs.existsSync(counterFile) ? JSON.parse(fs.readFileSync(counterFile, "utf8")) : {}; const next = Number(data.lastTicket || 0) + 1; fs.writeFileSync(counterFile, JSON.stringify({ lastTicket: next }, null, 2)); return next; } catch (error) { console.error(error); return Date.now(); } }
 http.createServer((req, res) => { res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" }); res.end("Marco Support está online."); }).listen(Number(process.env.PORT || 3000), "0.0.0.0", () => console.log("Site de status online."));
-const commands = [new SlashCommandBuilder().setName("painelsuporte").setDescription("Envia o painel do sistema de tickets").setDefaultMemberPermissions(PermissionFlagsBits.Administrator).toJSON()];
+const commands = [new SlashCommandBuilder().setName("painelsuporte").setDescription("Envia o painel do sistema de tickets").setDefaultMemberPermissions(PermissionFlagsBits.Administrator).toJSON(), new SlashCommandBuilder().setName("membros").setDescription("Mostra quantos membros há no servidor").toJSON()];
 client.once("ready", async () => { console.log("Bot conectado como " + client.user.tag); try { const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN); await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: commands }); console.log("/painelsuporte registrado."); } catch (error) { console.error("Erro ao registrar comando:", error); } });
 client.on("interactionCreate", async interaction => { try {
   if (interaction.isChatInputCommand() && interaction.commandName === "painelsuporte") {
@@ -16,7 +16,7 @@ client.on("interactionCreate", async interaction => { try {
     const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("abrir_ticket").setLabel("Abrir Ticket").setEmoji("🎟️").setStyle(ButtonStyle.Primary));
     return interaction.reply({ embeds: [embed], components: [row] });
   }
-  if (interaction.isButton() && interaction.customId === "abrir_ticket") {
+  if (interaction.isChatInputCommand() && interaction.commandName === "membros") { if (!interaction.member?.roles?.cache?.some(role => role.name === "👑 Dono")) return interaction.reply({ content: "Somente Dono.", ephemeral: true }); return interaction.reply({ content: "Membros: " + interaction.guild.memberCount, ephemeral: true }); } if (interaction.isButton() && interaction.customId === "abrir_ticket") {
     const guild = interaction.guild;
     if (!guild) return interaction.reply({ content: "Este botão só funciona no servidor.", ephemeral: true });
     const existing = guild.channels.cache.find(c => c.type === ChannelType.GuildText && c.topic === "ticket-owner:" + interaction.user.id);
